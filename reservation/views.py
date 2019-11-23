@@ -30,7 +30,7 @@ def reservation_create(request):
                                         status=status.HTTP_400_BAD_REQUEST)
                 serializer.save()
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
-            else:
+            else:  # If reservation is cyclic we must create reservations by the end of the semester every week or two
                 if request.data["semester"] == "LETNI":
                     last_day = '2020-06-14'
                     first_reservation_date = datetime.strptime(request.data['date'], '%Y-%m-%d').date()
@@ -41,10 +41,17 @@ def reservation_create(request):
                         serializer.save()
                 else:
                     last_day = '2020-01-26'
-                    end_of_semester = datetime.strptime(
-                        last_day, '%m %d').date().replace(year=datetime.strptime(request.data['date'], '%Y-%m-%d'
-                                                                                 ).date().year)
                     first_reservation_date = datetime.strptime(request.data['date'], '%Y-%m-%d').date()
+
+                    #Jeśli rezerwacja jest w styczniu lub przed 24 lutego, to nie dodajemy kolejnego roku do końca semestru
+                    if first_reservation_date.month < 2 or first_reservation_date.month == 2 and first_reservation_date.day <= 24 :
+                        end_of_semester = datetime.strptime(
+                            last_day, '%m %d').date().replace(year=datetime.strptime(request.data['date'], '%Y-%m-%d'
+                                                                                 ).date().year)
+                    else: # jeśli rezerwacja jest od października do końca grudnia musimy dodać 1 do roku biezącego
+                        end_of_semester = datetime.strptime(
+                            last_day, '%m %d').date().replace(year=datetime.strptime(request.data['date'], '%Y-%m-%d'
+                                                                                     ).date().year + 1)
                     while first_reservation_date < end_of_semester:
                         pass
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
