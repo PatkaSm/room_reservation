@@ -62,7 +62,6 @@ class RoomTests(APITestCase, URLPatternsTestCase):
         settings.TODAY = datetime.strptime('2020-02-24', '%Y-%m-%d').date()
         data['date'] = '2020-02-24'
         response = self.client.post(url, data=data, format='json')
-        print(Reservation.objects.all())
         print(json.loads(response.content))
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Reservation.objects.all().count() - count,
@@ -92,8 +91,6 @@ class RoomTests(APITestCase, URLPatternsTestCase):
         self.assertEqual(response.status_code, status.HTTP_406_NOT_ACCEPTABLE)
 
         print('\n----------REZERWACJA SALI W SEMESTRZE LETNIM PODCZAS SEMESTRU LETNIEGO----------\n')
-        data['semester'] = 'LETNI'
-        data['date'] = '2020-02-24'
         settings.TODAY = datetime.strptime('2020-02-24', '%Y-%m-%d').date()
         response = self.client.post(url, data=data, format='json')
         print(json.loads(response.content))
