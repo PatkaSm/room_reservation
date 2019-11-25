@@ -12,8 +12,8 @@ class Reservation(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     room = models.ForeignKey(Room, on_delete=models.CASCADE)
     is_cyclic = models.BooleanField(default=False)
-    semester = models.CharField(max_length=255, choices=SEMESTER, default='ZIMOWY')
-    is_every_two_week = models.BooleanField(default=False, null=True, blank=True)
+    semester = models.CharField(max_length=255, choices=SEMESTER, default='', null=True, blank=True)
+    is_every_two_weeks = models.BooleanField(default=False, null=True, blank=True)
 
-    def __set__(self):
-        return str(self.date) + ' ' + self.room
+    def __str__(self):
+        return str(self.date) + ' ' + str(self.room)

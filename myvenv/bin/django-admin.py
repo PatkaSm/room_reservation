@@ -1,4 +1,4 @@
-#!/home/patrycja/Dokumenty/Programowanie/Django/RezerwacjaSal/myvenv/bin/python3
+#!/home/pawel/Projekty/RezerwacjaSal/room_reservation/myvenv/bin/python
 from django.core import management
 
 if __name__ == "__main__":

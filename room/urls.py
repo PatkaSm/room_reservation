@@ -7,5 +7,5 @@ router.register('room', views.RoomView)
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('show_available_rooms', views.show_available_rooms)
+    path('show_available_rooms', views.show_available_rooms, name='show_available_rooms')
 ]
