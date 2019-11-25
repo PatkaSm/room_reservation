@@ -32,12 +32,16 @@ class RoomTests(APITestCase, URLPatternsTestCase):
                                         password='1234567890')
         Reservation.objects.create(date=datetime.now() + timedelta(days=1),
                                    hour=datetime.strptime('8:00', '%H:%M').time(), room=test_room, user=test_user)
-        response = self.client.post(url, data=data, format='json')
+
+        print('\n \n \n ==================================TESTY DOSTĘPNYCH SAL ========================================= ')
+
         print('----------WYSWIETLANIE DOSTĘPNYCH GODZIN GDY DANE SIĘ ZGADZAJĄ----------')
+        response = self.client.post(url, data=data, format='json')
         print(json.loads(response.content))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(json.loads(response.content),
                          {'126 B2': ['09:45:00', '11:30:00', '13:15:00', '15:00:00', '16:45:00', '18:30:00']})
+
         print('----------WYSWIETLANIE DOSTĘPNYCH GODZIN GDY DANE SIĘ ZGADZAJĄ, DLA DWÓCH SAL----------')
         data['number_of_seats'] = '5'
         data['number_of_computers'] = '0'
@@ -59,10 +63,11 @@ class RoomTests(APITestCase, URLPatternsTestCase):
                                      '16:45:00',
                                      '18:30:00']}
                          )
+
+        print('----------SPRAWDZANIE CZY FORMAT GODZINY JEST ODPOWIEDNI----------')
         data['from_hour'] = '8;00'
         data['to_hour'] = '18.30'
         response = self.client.post(url, data=data, format='json')
-        print('----------SPRAWDZANIE CZY FORMAT GODZINY JEST ODPOWIEDNI----------')
         print(json.loads(response.content))
         self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
         self.assertEqual(json.loads(response.content),
@@ -70,15 +75,17 @@ class RoomTests(APITestCase, URLPatternsTestCase):
         data['from_hour'] = '8:00'
         data['to_hour'] = '18:30'
         data['date'] = datetime.strftime(datetime.now() - timedelta(days=1), '%Y-%m-%d')
-        response = self.client.post(url, data=data, format='json')
+
         print('----------SPRAWDZANIE CZY DATA REZERWACJI JEST W PRZYSZŁOŚCI----------')
+        response = self.client.post(url, data=data, format='json')
         print(json.loads(response.content))
         self.assertEqual(json.loads(response.content),
                          {'error': 'Nie można zarezerwować sali w przeszłości'})
         self.assertEqual(response.status_code, status.HTTP_406_NOT_ACCEPTABLE)
         data['date'] = datetime.strftime(datetime.now() + timedelta(days=1), '%Y:%m:%d')
-        response = self.client.post(url, data=data, format='json')
+
         print('----------SPRAWDZANIE CZY FORMAT DATY JEST PRAWIDŁOWY----------')
+        response = self.client.post(url, data=data, format='json')
         print(json.loads(response.content))
         self.assertEqual(json.loads(response.content),
                          {'error': 'Zły format daty. Prawidłowy format daty to RRRR-MM-DD'})
@@ -86,9 +93,11 @@ class RoomTests(APITestCase, URLPatternsTestCase):
         data['number_of_seats'] = 'dziesięć'
         data['number_of_computers'] = 'dziesięć'
         data['date'] = datetime.strftime(datetime.now() + timedelta(days=1), '%Y-%m-%d')
-        response = self.client.post(url, data=data, format='json')
+
         print('----------SPRAWDZANIE CZY WYMAGANIA LICZBOWE SĄ PODANE POPRAWNIE----------')
+        response = self.client.post(url, data=data, format='json')
         print(json.loads(response.content))
         self.assertEqual(json.loads(response.content),
                          {'error': 'Liczba miejsc i komputerów musi być liczbą całkowitą!'})
         self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+

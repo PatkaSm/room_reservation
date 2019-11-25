@@ -1,12 +1,10 @@
-from calendar import month
 from datetime import datetime, timedelta
 
-from django.views.decorators.csrf import csrf_exempt
 from rest_framework import viewsets, status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from user.models import User
+from mysite import settings
 from .models import Reservation
 from .serializer import ReservationSerializer
 
@@ -25,7 +23,7 @@ def reservation_create(request):
                 if not is_available(room=serializer.validated_data['room'], date=serializer.validated_data['date'],
                                     hour=serializer.validated_data['hour']):
                     return Response(data={'error': 'Sala jest zarezerwowana w tym terminie!'},
-                                    status=status.HTTP_400_BAD_REQUEST)
+                                    status=status.HTTP_406_NOT_ACCEPTABLE)
                 else:
                     serializer.save()
                     return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -37,11 +35,13 @@ def reservation_create(request):
                     end_of_semester = datetime.strptime(
                         last_day, '%Y-%m-%d').date().replace(year=datetime.strptime(request.data['date'], '%Y-%m-%d'
                                                                                     ).date().year)
-                    if (datetime.now() - timedelta(
-                            weeks=1)).date() > first_day.date() and datetime.now().date() < end_of_semester:
-                        data = {'success': 'Pomyślnie zarezerwowano do końca semestru letniego', 'exceptions': []}
+                    # Sprawdzamy czy data dzisiejsza jest większa niż tydzień przed rozpoczęciem semestru
+                    if (settings.TODAY > (first_day - timedelta(weeks=1)).date()) and settings.TODAY <= end_of_semester:
+                        data = {'success': 'Pomyślnie zarezerwowano do końca semestru letniego', 'exceptions': [],
+                                'ilosc': '0'}
 
                         # Rezerwacje tworzymy co tydzień, lub co dwa od podanej daty początkowej do końca semestru
+                        licznik = 0  # LICZNIK STWORZONYCH REZERWACJI
                         while first_reservation_date <= end_of_semester:
                             if is_available(room=serializer.validated_data['room'], date=first_reservation_date,
                                             hour=serializer.validated_data['hour']):
@@ -51,6 +51,7 @@ def reservation_create(request):
                                                            room=serializer.validated_data['room'],
                                                            is_cyclic=serializer.validated_data['is_cyclic'],
                                                            semester=serializer.validated_data['semester'])
+                                licznik += 1
                             else:
                                 # jeżeli podczas procesu rezerwacji cyklicznej algorytm napotka na swojej drodze
                                 # rezerwację w tym samym czasie to doda jej datę do listy ['exceptions']
@@ -63,6 +64,7 @@ def reservation_create(request):
                                 first_reservation_date = first_reservation_date + timedelta(weeks=2)
                             else:
                                 first_reservation_date = first_reservation_date + timedelta(weeks=1)
+                        data['ilosc'] = str(licznik)
                         return Response(data=data,
                                         status=status.HTTP_201_CREATED)
                     else:
@@ -86,8 +88,10 @@ def reservation_create(request):
                         end_of_semester = datetime.strptime(
                             last_day, '%Y-%m-%d').date().replace(year=datetime.strptime(request.data['date'], '%Y-%m-%d'
                                                                                         ).date().year + 1)
-                    if (first_day - timedelta(weeks=1)).date() <= datetime.now().date() < end_of_semester:
-                        data = {'success': 'Pomyślnie zarezerwowano do końca semestru zimowego', 'exceptions': []}
+                    if (first_day - timedelta(weeks=1)).date() < settings.TODAY <= end_of_semester:
+                        data = {'success': 'Pomyślnie zarezerwowano do końca semestru zimowego', 'exceptions': [],
+                                'ilosc': '0'}
+                        licznik = 0  # LICZNIK STWORZONYCH REZERWACJI
                         while first_reservation_date <= end_of_semester:
                             if is_available(room=serializer.validated_data['room'], date=first_reservation_date,
                                             hour=serializer.validated_data['hour']):
@@ -97,6 +101,7 @@ def reservation_create(request):
                                                            room=serializer.validated_data['room'],
                                                            is_cyclic=serializer.validated_data['is_cyclic'],
                                                            semester=serializer.validated_data['semester'])
+                                licznik += 1
                             else:
                                 data['success'] = 'Pomyślnie zarezerwowano do końca semestru zimowego, z wyjątkami,' \
                                                   ' skontaktuj się z dziekanatem'
@@ -105,6 +110,7 @@ def reservation_create(request):
                                 first_reservation_date = first_reservation_date + timedelta(weeks=2)
                             else:
                                 first_reservation_date = first_reservation_date + timedelta(weeks=1)
+                        data['ilosc'] = str(licznik)
                         return Response(data=data,
                                         status=status.HTTP_201_CREATED)
                     else:
@@ -112,7 +118,9 @@ def reservation_create(request):
                             data={'errors': 'Aktualnie trwa semestr letni, więc Nie możesz '
                                             'zarezerwować sali na semestr zimowy'},
                             status=status.HTTP_406_NOT_ACCEPTABLE)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response(serializer.errors, status=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+    return Response(data={'error': 'Metoda niedozwolona'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
 # Funkcja sprawdzająca czy sala jest dostępna w danym terminie

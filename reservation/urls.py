@@ -11,5 +11,5 @@ urlpatterns = [
     path('', include(router.urls)),
     path('reservation/<pk>/detail', views.reservation_detail),
     path('reservation/<pk>/delete', views.reservation_delete),
-    path('create', views.reservation_create),
+    path('create', views.reservation_create, name='add_reservation'),
 ]
