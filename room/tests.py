@@ -4,6 +4,7 @@ from django.urls import reverse, path, include
 from rest_framework import status
 from rest_framework.test import APITestCase, URLPatternsTestCase
 
+from mysite import variables
 from reservation.models import Reservation
 from room import views
 from user.models import User
@@ -25,7 +26,7 @@ class RoomTests(APITestCase, URLPatternsTestCase):
                 'from_hour': '8:00',
                 'to_hour': '18:30'
                 }
-
+        variables.TODAY = datetime.now().date()
         test_room = Room.objects.create(number='126', wing='B2', number_of_seats=15, number_of_computers=15)
         Room.objects.create(number='127', wing='B2', number_of_seats=15, number_of_computers=0)
         test_user = User.objects.create(email='test@test.test', first_name='Andrzej', last_name='Testowy',
@@ -101,5 +102,24 @@ class RoomTests(APITestCase, URLPatternsTestCase):
         self.assertEqual(json.loads(response.content),
                          {'error': 'Liczba miejsc i komputerów musi być liczbą całkowitą!'})
         self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+
+        print('\n----------SPRAWDZANIE CZY REZERWACJA JEST MOŻLIWA POZA ROKIEM AKADEMICKIM----------\n')
+        data['date'] = '2020-08-08'
+        response = self.client.post(url, data=data, format='json')
+        print(json.loads(response.content))
+        self.assertEqual(response.status_code, status.HTTP_406_NOT_ACCEPTABLE)
+        self.assertEqual(json.loads(response.content),
+                         {'errors': 'Nie można rejestrować sali poza rokiem akademickim i sesją poprawkową, '
+                                    'ani na przyszłe lata!'})
+
+        print('\n----------SPRAWDZANIE CZY REZERWACJA JEST MOŻLIWA NA INNY ROK AKADEMICKI----------\n')
+        data['date'] = '2021-10-11'
+        response = self.client.post(url, data=data, format='json')
+        print(json.loads(response.content))
+        self.assertEqual(response.status_code, status.HTTP_406_NOT_ACCEPTABLE)
+        self.assertEqual(json.loads(response.content),
+                         {'errors': 'Nie można rejestrować sali poza rokiem akademickim i sesją poprawkową, '
+                                    'ani na przyszłe lata!'})
         print('\n----------------------------------------------------------------------\n')
+
 
