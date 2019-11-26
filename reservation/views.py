@@ -160,16 +160,20 @@ def is_available(room, date, hour):
 def reservation_delete(request, pk):
     try:
         reservation = Reservation.objects.get(pk=pk)
+
     except Reservation.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
     if request.method == 'DELETE':
         operation = reservation.delete()
         data = {}
+
         if operation:
             data["success"] = "Delete successfully"
+
         else:
             data["failure"] = "Delete failed"
+
         return Response(data=data, status=status.HTTP_200_OK)
 
 
@@ -177,8 +181,10 @@ def reservation_delete(request, pk):
 def reservation_detail(request, pk):
     try:
         reservation = Reservation.objects.get(pk=pk)
+
     except Reservation.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
+
     if request.method == 'GET':
         serializer = ReservationSerializer(reservation)
         return Response(serializer.data, status=status.HTTP_200_OK)

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
 from django.urls import reverse, path, include
 from rest_framework import status
@@ -34,7 +34,8 @@ class RoomTests(APITestCase, URLPatternsTestCase):
                                                       hour=datetime.strptime('9:45', '%H:%M').time(), room=test_room,
                                                       user=test_user)
 
-        print('\n \n \n =============================TESTY REZERWACJI ====================================\n\n\n')
+        print(
+            '\n \n \n ============================TESTY DODAWANIA REZERWACJI ===================================\n\n\n')
 
         print(
             '---------REZULTAT POPRAWNEJ JEDNORAZOWEJ REZERWACJI W DOSTĘNYMM TERMINIE W AKTUALNYM SEMESTRZE---------\n')
@@ -125,9 +126,59 @@ class RoomTests(APITestCase, URLPatternsTestCase):
 
         print('\n----------REZERWACJA SALI NA INNY ROK AKADEMICKI----------\n')
         data['hour'] = '8:00'
+        variables.TODAY = datetime.strptime('2019-12-12', '%Y-%m-%d').date()
         data['date'] = '2020-12-22'
         response = self.client.post(url, data=data, format='json')
         print(json.loads(response.content))
         self.assertEqual(response.status_code, status.HTTP_406_NOT_ACCEPTABLE)
 
         print('\n--------------------------------------------------------------------------------------\n')
+
+    def test_reservation_delete(self):
+        print(
+            '\n \n \n ============================TESTY USUWANIA REZERWACJI ===================================\n\n\n')
+        variables.TODAY = date(2019, 10, 1)
+        test_room = Room.objects.create(number='125', wing='B3', number_of_seats=110, number_of_computers=15)
+        test_user = User.objects.create(email='test@test.test', first_name='Krystyna', last_name='Pawlacz',
+                                        password='1234567890')
+        test_reservation = Reservation.objects.create(date=datetime.strptime('2019-12-12', '%Y-%m-%d'),
+                                                      hour=datetime.strptime('9:45', '%H:%M').time(), room=test_room,
+                                                      user=test_user)
+
+        print('\n----------CZY REZERWACJA JEST USUWANA, GDY NIE ISTNIEJE----------\n')
+        url = reverse('reservation_delete', args=[22])
+        response = self.client.delete(url, data={}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(Reservation.objects.all().count(), 1)
+        print(response.content)
+
+        print('\n----------CZY REZERWACJA JEST USUWANA, GDY ISTNIEJE----------\n')
+        url = reverse('reservation_delete', args=[test_reservation.id])
+        response = self.client.delete(url, data={}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(Reservation.objects.all().count(), 0)
+        self.assertEqual(json.loads(response.content), {'success': 'Delete successfully'})
+        print(json.loads(response.content))
+
+    def test_reservation_detail(self):
+        print(
+            '\n \n \n ==========================TESTY WYŚWIETLANIA REZERWACJI ================================\n\n\n')
+        variables.TODAY = date(2019, 10, 1)
+        test_room = Room.objects.create(number='125', wing='B3', number_of_seats=110, number_of_computers=15)
+        test_user = User.objects.create(email='test@test.test', first_name='Krystyna', last_name='Pawlacz',
+                                        password='1234567899')
+        test_reservation = Reservation.objects.create(date=datetime.strptime('2019-12-12', '%Y-%m-%d'),
+                                                      hour=datetime.strptime('9:45', '%H:%M').time(), room=test_room,
+                                                      user=test_user)
+        url = reverse('reservation_detail', args=[test_reservation.id])
+        print('\n----------CZYT REZERWACJA JEST WYŚWIETLANA POPRAWNIE GDY ISTNIEJE----------\n')
+        response = self.client.get(url, data={}, format='json')
+        self.assertEqual(json.loads(response.content),
+                         {'id': 1, 'hour': '09:45:00', 'date': '2019-12-12', 'user': 1, 'room': 1,
+                          'is_cyclic': False, 'semester': '', 'is_every_two_weeks': False})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        print('\n----------CZYT REZERWACJA JEST WYŚWIETLANA POPRAWNIE GDY NIE ISTNIEJE----------\n')
+        url = reverse('reservation_detail', args=[2])
+        response = self.client.get(url, data={}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
