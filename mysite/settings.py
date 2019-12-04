@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     'user',
     'reservation',
     'room',
-    'academic_year'
+    'reservation_season'
 ]
 
 AUTH_USER_MODEL = 'user.User'  # changes the buil-in user model to ours
