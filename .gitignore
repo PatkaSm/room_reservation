@@ -92,6 +92,5 @@ db.sqlite3
 
 .idea/
 .vscode/
-migrations/
 __pycache__/
 myvenv/
