@@ -9,11 +9,6 @@ from .models import Room
 from .serializers import RoomSerializer
 
 
-class RoomView(viewsets.ModelViewSet):
-    queryset = Room.objects.all()
-    serializer_class = RoomSerializer
-
-
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def show_available_rooms(request):
