@@ -20,7 +20,7 @@ class Room(models.Model):
 
     @staticmethod
     def show_available(reservation_date, reservation_hour_from, reservation_hour_to,
-                       number_of_seats, number_of_computers, additional_equipment):
+                       number_of_seats, number_of_computers, additional_equipment, room_list, reservation_list):
 
         base_hours = [time(8, 0), time(9, 45), time(11, 30), time(13, 15), time(15, 0), time(16, 45), time(18, 30)]
         hours_that_fulfill = []  # lista na godziny które pasują użytkownikowi
@@ -35,7 +35,7 @@ class Room(models.Model):
         #                                               godzina3...]}
         rooms_that_fulfill = []  # lista na sale, które spełniają wymagania użytkownika
         final_dict = {}
-        room_list = Room.objects.all()
+
         for room in room_list:
             if (room.number_of_computers >= number_of_computers and room.number_of_seats >= number_of_seats
                     and room.additional_equipment == additional_equipment):
@@ -43,7 +43,6 @@ class Room(models.Model):
 
         for room in rooms_that_fulfill:
             room_hours = hours_that_fulfill[:]
-            reservation_list = reservation.models.Reservation.objects.filter(room=room, date=reservation_date)
             for reserv in reservation_list:
                 if reserv.hour in room_hours:
                     room_hours.remove(reserv.hour)

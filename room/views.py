@@ -3,6 +3,8 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+
+from reservation.models import Reservation
 from .serializers import DemandingSerializer
 from reservation_season.models import ReservationSeason
 from .models import Room
@@ -36,6 +38,7 @@ def show_available_rooms(request):
     if reservation_date > current_season.season_end or reservation_date < current_season.season_start:
         return Response(data={'errors': "Próbujesz zarezerwować salę na inny rok akademicki"},
                         status=status.HTTP_406_NOT_ACCEPTABLE)
-
+    room_list = Room.objects.all()
+    reservation_list = Reservation.objects.filter(date=reservation_date)
     return Response(data=Room.show_available(reservation_date, hour_from, hour_to, number_of_seats, number_of_computers,
-                                             additional_equipment), status=status.HTTP_200_OK)
+                    additional_equipment, room_list, reservation_list), status=status.HTTP_200_OK)
