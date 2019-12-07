@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, date
+"""from datetime import datetime, timedelta, date
 
 from django.urls import reverse, path, include
 from rest_framework import status
@@ -181,4 +181,4 @@ class RoomTests(APITestCase, URLPatternsTestCase):
         print('\n----------CZYT REZERWACJA JEST WYŚWIETLANA POPRAWNIE GDY NIE ISTNIEJE----------\n')
         url = reverse('reservation_detail', args=[2])
         response = self.client.get(url, data={}, format='json')
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)"""

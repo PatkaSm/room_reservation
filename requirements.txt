@@ -1,4 +1,6 @@
+freezegun
 python-dateutil
 Django==2.2.8
 djangorestframework==3.10.3
+django-cors-headers==3.2.0
 

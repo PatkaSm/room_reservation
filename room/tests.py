@@ -1,4 +1,110 @@
-from datetime import datetime, timedelta
+import unittest
+
+from room.models import Room
+from reservation.models import Reservation
+from datetime import date, time, datetime
+from freezegun import freeze_time
+
+
+# MOCK OBJECTS FOR ROOM#
+
+
+class TestStringMethods(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        print('\n ============== JEDNOSTKOWE TESTY WYŚWIETLANIA DOSTĘPNYCH SAL ============== \n')
+        test_room_1 = Room(id=1, number=126, wing='B2', number_of_seats=125, number_of_computers=0)
+        test_room_2 = Room(id=2, number=127, wing='B2', number_of_seats=125, number_of_computers=0)
+        test_room_3 = Room(id=3, number=128, wing='B2', number_of_seats=125, number_of_computers=0)
+        test_room_4 = Room(id=4, number=129, wing='B2', number_of_seats=125, number_of_computers=0)
+        test_room_5 = Room(id=5, number=130, wing='B2', number_of_seats=125, number_of_computers=0)
+
+        cls.room_list = [test_room_1, test_room_2, test_room_3, test_room_4, test_room_5]
+
+        test_reservation_1 = Reservation(date=date(2019, 10, 3), hour=time(8, 0), user_id=1, room=test_room_1,
+                                         is_cyclic=False, is_every_two_weeks=False)
+        test_reservation_2 = Reservation(date=date(2019, 10, 3), hour=time(9, 45), user_id=1, room=test_room_2,
+                                         is_cyclic=False, is_every_two_weeks=False)
+        test_reservation_3 = Reservation(date=date(2019, 10, 3), hour=time(11, 30), user_id=1, room=test_room_3,
+                                         is_cyclic=False, is_every_two_weeks=False)
+        test_reservation_4 = Reservation(date=date(2019, 10, 3), hour=time(16, 45), user_id=1, room=test_room_4,
+                                         is_cyclic=False, is_every_two_weeks=False)
+        test_reservation_5 = Reservation(date=date(2019, 10, 3), hour=time(15, 0), user_id=1, room=test_room_5,
+                                         is_cyclic=False, is_every_two_weeks=False)
+
+        cls.reservation_list = [test_reservation_1, test_reservation_2, test_reservation_3, test_reservation_4,
+                                test_reservation_5]
+
+        test_reservation_6 = Reservation(date=date(2019, 10, 9), hour=time(8, 0), user_id=1, room=test_room_2,
+                                         is_cyclic=False, is_every_two_weeks=False)
+        test_reservation_7 = Reservation(date=date(2019, 10, 9), hour=time(9, 45), user_id=1, room=test_room_2,
+                                         is_cyclic=False, is_every_two_weeks=False)
+        test_reservation_8 = Reservation(date=date(2019, 10, 9), hour=time(11, 30), user_id=1, room=test_room_2,
+                                         is_cyclic=False, is_every_two_weeks=False)
+        test_reservation_9 = Reservation(date=date(2019, 10, 9), hour=time(13, 15), user_id=1, room=test_room_2,
+                                         is_cyclic=False, is_every_two_weeks=False)
+        test_reservation_10 = Reservation(date=date(2019, 10, 9), hour=time(15, 0), user_id=1, room=test_room_2,
+                                          is_cyclic=False, is_every_two_weeks=False)
+        test_reservation_11 = Reservation(date=date(2019, 10, 9), hour=time(16, 45), user_id=1, room=test_room_2,
+                                          is_cyclic=False, is_every_two_weeks=False)
+        test_reservation_12 = Reservation(date=date(2019, 10, 9), hour=time(18, 30), user_id=1, room=test_room_2,
+                                          is_cyclic=False, is_every_two_weeks=False)
+
+        cls.busy_reservation_list = [test_reservation_6, test_reservation_7, test_reservation_8, test_reservation_9,
+                                     test_reservation_10, test_reservation_11, test_reservation_12]
+
+    # WYŚWIETLANIE SŁOWNIKA GDZIE 5 SAL JEST ZAWSZE WOLNYCH
+    @freeze_time('2019-10-01')
+    def test_with_no_reservations_blocking(self):
+        print(" \n------------------------------------ TEST NR 1 ------------------------------------\n ")
+        test_list_1 = Room.show_available(date(2019, 10, 7), time(8, 0), time(20, 0),
+                                          0, 0, 'BRAK', self.room_list, self.reservation_list)
+
+        self.assertEqual(len(test_list_1), 5, msg='Nieprawidłowa ilość zwróconych sal')
+        self.assertEqual(type(test_list_1), dict, msg='Nie zgadza się typ zwróconych danych w teście nr 1')
+        self.assertEqual(type(test_list_1['126 B2']), list,
+                         msg='Format godzin dla sali 126 B2 nie zgadza się w teście nr 1')
+        for sala in test_list_1.keys():
+            self.assertEqual(len(test_list_1[sala]), 7,
+                             msg="Sala w której nie zgadza się to: {} w teście nr 1".format(sala))
+
+    # WYŚWIETLANIE SŁOWNIKA GDZIE JEDNA SALA NIE JEST WOLNA W OGÓLE
+    @freeze_time('2019-10-01')
+    def test_where_room_is_not_avaliable_at_all(self):
+        print(" \n------------------------------------ TEST NR 2 ------------------------------------ \n")
+        test_list_2 = Room.show_available(date(2019, 10, 9), time(8, 0), time(20, 0), 10, 0, 'BRAK', self.room_list,
+                                          self.busy_reservation_list)
+        self.assertEqual(type(test_list_2), dict, msg='Typ zwróconych danych nie zgadza się w teście nr 2')
+        self.assertEqual(type(test_list_2['126 B2']), list,
+                         msg='Format godzin dla sali 126 B2 nie zgadza się w teście nr 2')
+        self.assertEqual(len(test_list_2), 4, msg="Ilość sal się nie zgadza w teście nr 2")
+
+    # WYŚWIETLANIE SŁOWNIKA GDZIE W KAŻDEJ SALI JEST ZAJĘTA KTÓRAŚ Z GODZIN
+    @freeze_time('2019-10-01')
+    def test_where_room_is_avaliable_but_not_all_day(self):
+        print(" \n------------------------------------ TEST NR 3 ------------------------------------\n ")
+        room_is_available_not_all_day = []
+        test_list_3 = Room.show_available(date(2019, 10, 3), time(8, 0), time(20, 0), 10, 0, 'BRAK', self.room_list,
+                                          self.reservation_list)
+        # sprawdzamy sale mające mniej niż 7 dostępnych godzin rezerwacji danego dnia i dodajemy je do listy
+        for sala in test_list_3.keys():
+            if len(test_list_3[sala]) < 7:
+                room_is_available_not_all_day.append(sala)
+        self.assertEqual(type(test_list_3), dict, msg='Typ zwróconych danych nie zgadza się w teście nr 3')
+        self.assertEqual(type(test_list_3['126 B2']), list,
+                         msg='Format godzin dla sali 126 B2 nie zgadza się w teście nr 3')
+        self.assertEqual(len(room_is_available_not_all_day), 5,
+                         msg='Któraś z sal jest wolna przez cały dzień w teście nr 3')
+
+    @freeze_time('2019-10-01')
+    def test_where_user_set_night_hours(self):
+        print(" \n ------------------------------------ TEST NR 4 ------------------------------------ \n ")
+        self.assertRaises(ValueError,
+                          Room.show_available, date(2019, 10, 3), time(1, 0), time(7, 0), 10, 0, 'BRAK', self.room_list,
+                          self.reservation_list)
+
+
+"""from datetime import datetime, timedelta
 
 from django.urls import reverse, path, include
 from rest_framework import status
@@ -120,6 +226,4 @@ class RoomTests(APITestCase, URLPatternsTestCase):
         self.assertEqual(json.loads(response.content),
                          {'errors': 'Nie można rejestrować sali poza rokiem akademickim i sesją poprawkową, '
                                     'ani na przyszłe lata!'})
-        print('\n----------------------------------------------------------------------\n')
-
-
+        print('\n----------------------------------------------------------------------\n')"""

@@ -39,6 +39,6 @@ def show_available_rooms(request):
         return Response(data={'errors': "Próbujesz zarezerwować salę na inny rok akademicki"},
                         status=status.HTTP_406_NOT_ACCEPTABLE)
     room_list = Room.objects.all()
-    reservation_list = Reservation.objects.filter(date=reservation_date)
+    reservation_list = Reservation.objects.all()
     return Response(data=Room.show_available(reservation_date, hour_from, hour_to, number_of_seats, number_of_computers,
                     additional_equipment, room_list, reservation_list), status=status.HTTP_200_OK)

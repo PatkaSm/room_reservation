@@ -13,7 +13,7 @@ class Room(models.Model):
     additional_equipment = models.CharField(max_length=50, choices=Equipment, default='BRAK')
 
     def __str__(self):
-        return str(self.number) + ' ' + self.wing
+        return str(self.number) + ' ' + str(self.wing)
 
     def is_available(self, date, hour):
         return not reservation.models.Reservation.objects.filter(room=self, date=date, hour=hour).exists()
@@ -27,7 +27,8 @@ class Room(models.Model):
         for hour in base_hours:
             if reservation_hour_from <= hour <= reservation_hour_to:
                 hours_that_fulfill.append(hour)
-
+        if len(hours_that_fulfill) == 0:
+            raise ValueError('Podano godziny nocne! Sale wtedy nie mogą być rezerwowane')
         # Słownik zawierający sale, które spełniają wymagania oraz listę godzin w których są dostępne
         # Dane będą występować w formacie
         # final_rooms = {'nazwa_pokoju skrzydło': [     godzina1,
@@ -44,7 +45,7 @@ class Room(models.Model):
         for room in rooms_that_fulfill:
             room_hours = hours_that_fulfill[:]
             for reserv in reservation_list:
-                if reserv.hour in room_hours:
+                if (reserv.hour in room_hours) and reserv.room == room and reserv.date == reservation_date:
                     room_hours.remove(reserv.hour)
             if not len(room_hours) == 0:
                 final_dict[str(room.number) + ' ' + str(room.wing)] = room_hours
