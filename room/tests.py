@@ -4,12 +4,24 @@ from room.models import Room
 from reservation.models import Reservation
 from datetime import date, time, datetime
 from freezegun import freeze_time
+from datetime import datetime, timedelta
+
+from django.urls import reverse, path, include
+from rest_framework import status
+from rest_framework.test import APITestCase, URLPatternsTestCase
+from reservation_season.models import ReservationSeason
+
+from reservation.models import Reservation
+from room import views
+from user.models import User
+from .models import Room
+import json
 
 
 # MOCK OBJECTS FOR ROOM#
 
 
-class TestStringMethods(unittest.TestCase):
+class RoomUnitTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         print('\n ============== JEDNOSTKOWE TESTY WYŚWIETLANIA DOSTĘPNYCH SAL ============== \n')
@@ -55,8 +67,8 @@ class TestStringMethods(unittest.TestCase):
 
     # WYŚWIETLANIE SŁOWNIKA GDZIE 5 SAL JEST ZAWSZE WOLNYCH
     @freeze_time('2019-10-01')
-    def test_with_no_reservations_blocking(self):
-        print(" \n------------------------------------ TEST NR 1 ------------------------------------\n ")
+    def test_unit_room_1(self):
+        print(" \n------------------------- TEST, GDY 5 SAL JEST WOLNYCH NA CAŁY DZIEŃ -------------------------\n ")
         test_list_1 = Room.show_available(date(2019, 10, 7), time(8, 0), time(20, 0),
                                           0, 0, 'BRAK', self.room_list, self.reservation_list)
 
@@ -70,8 +82,8 @@ class TestStringMethods(unittest.TestCase):
 
     # WYŚWIETLANIE SŁOWNIKA GDZIE JEDNA SALA NIE JEST WOLNA W OGÓLE
     @freeze_time('2019-10-01')
-    def test_where_room_is_not_avaliable_at_all(self):
-        print(" \n------------------------------------ TEST NR 2 ------------------------------------ \n")
+    def test_unit_room_2(self):
+        print(" \n------------------------- TEST GDY JEDNA SALA NIE JEST WOLNA W OGÓLE ------------------------- \n")
         test_list_2 = Room.show_available(date(2019, 10, 9), time(8, 0), time(20, 0), 10, 0, 'BRAK', self.room_list,
                                           self.busy_reservation_list)
         self.assertEqual(type(test_list_2), dict, msg='Typ zwróconych danych nie zgadza się w teście nr 2')
@@ -81,8 +93,8 @@ class TestStringMethods(unittest.TestCase):
 
     # WYŚWIETLANIE SŁOWNIKA GDZIE W KAŻDEJ SALI JEST ZAJĘTA KTÓRAŚ Z GODZIN
     @freeze_time('2019-10-01')
-    def test_where_room_is_avaliable_but_not_all_day(self):
-        print(" \n------------------------------------ TEST NR 3 ------------------------------------\n ")
+    def test_unit_room_3(self):
+        print(" \n---------------------- TEST GDY W KAŻDEJ SALI JEST ZAJĘTA KTÓRAŚ Z GODZIN ----------------------\n ")
         room_is_available_not_all_day = []
         test_list_3 = Room.show_available(date(2019, 10, 3), time(8, 0), time(20, 0), 10, 0, 'BRAK', self.room_list,
                                           self.reservation_list)
@@ -97,133 +109,144 @@ class TestStringMethods(unittest.TestCase):
                          msg='Któraś z sal jest wolna przez cały dzień w teście nr 3')
 
     @freeze_time('2019-10-01')
-    def test_where_user_set_night_hours(self):
-        print(" \n ------------------------------------ TEST NR 4 ------------------------------------ \n ")
+    def test_unit_room_4(self):
+        print(" \n ------------------------ TEST GDY PODANA JEST ZŁA KOLEJNOŚĆ GODZIN ------------------------ \n ")
         self.assertRaises(ValueError,
                           Room.show_available, date(2019, 10, 3), time(1, 0), time(7, 0), 10, 0, 'BRAK', self.room_list,
                           self.reservation_list)
 
 
-"""from datetime import datetime, timedelta
+# Integration tests
 
-from django.urls import reverse, path, include
-from rest_framework import status
-from rest_framework.test import APITestCase, URLPatternsTestCase
-
-from mysite import variables
-from reservation.models import Reservation
-from room import views
-from user.models import User
-from .models import Room
-import json
-
-
-class RoomTests(APITestCase, URLPatternsTestCase):
+class RoomIntegrationTests(APITestCase, URLPatternsTestCase):
     urlpatterns = [
         path('rooms/show_available/rooms/', include('room.urls')),
     ]
 
-    def test_showing_available_rooms(self):
-        url = reverse('show_available_rooms')
-        data = {'date': datetime.strftime(datetime.now() + timedelta(days=1), '%Y-%m-%d'),
-                'number_of_seats': '10',
-                'number_of_computers': '10',
-                'additional_equipment': 'BRAK',
-                'from_hour': '8:00',
-                'to_hour': '18:30'
-                }
-        variables.TODAY = datetime.now().date()
-        test_room = Room.objects.create(number='126', wing='B2', number_of_seats=15, number_of_computers=15)
-        Room.objects.create(number='127', wing='B2', number_of_seats=15, number_of_computers=0)
-        test_user = User.objects.create(email='test@test.test', first_name='Andrzej', last_name='Testowy',
-                                        password='1234567890')
-        Reservation.objects.create(date=datetime.now() + timedelta(days=1),
-                                   hour=datetime.strptime('8:00', '%H:%M').time(), room=test_room, user=test_user)
+    @classmethod
+    def setUpClass(cls):
+        super(RoomIntegrationTests, cls).setUpClass()
+        print('\n  ============== INTEGRACYJNE TESTY DOSTĘPNYCH SAL ============== \n ')
 
-        print('\n \n \n ==================================TESTY DOSTĘPNYCH SAL'
-              ' =========================================\n\n\n ')
+    @classmethod
+    def setUpTestData(cls):
+        cls.test_room = Room.objects.create(number='126', wing='B2', number_of_seats=15, number_of_computers=15)
+        cls.test_room_2 = Room.objects.create(number='127', wing='B2', number_of_seats=15, number_of_computers=0)
+        cls.test_user = User.objects.create(email='test@test.test', first_name='Andrzej', last_name='Testowy',
+                                            password='1234567890')
+        cls.test_reservation = Reservation.objects.create(date=datetime.now() + timedelta(days=1),
+                                                          hour=datetime.strptime('8:00', '%H:%M').time(),
+                                                          room=cls.test_room, user=cls.test_user)
+        cls.data = {'reservation_date': datetime.strftime(datetime.now() + timedelta(days=1), '%Y-%m-%d'),
+                    'number_of_seats': '10',
+                    'number_of_computers': '10',
+                    'additional_equipment': 'BRAK',
+                    'reservation_hour_from': '8:00',
+                    'reservation_hour_to': '18:30'
+                    }
+        cls.current_season = ReservationSeason.objects.create(season_start=date(2019, 10, 1),
+                                                              season_end=date(2020, 7, 31),
+                                                              summer_semester_start=date(2019, 2, 14),
+                                                              summer_semester_end=date(2020, 6, 14),
+                                                              winter_semester_start=date(2019, 10, 1),
+                                                              winter_semester_end=date(2020, 1, 25), is_current=True)
+        cls.url = reverse('show_available_rooms')
 
+    @freeze_time('2019-10-01')
+    def test_integration_room_1(self):
         print('\n----------WYSWIETLANIE DOSTĘPNYCH GODZIN GDY DANE SIĘ ZGADZAJĄ----------\n')
-        response = self.client.post(url, data=data, format='json')
-        print(json.loads(response.content))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.client.post(self.url, data=self.data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK,
+                         msg='Zły response status code w teście integracyjnym nr 1')
         self.assertEqual(json.loads(response.content),
-                         {'126 B2': ['09:45:00', '11:30:00', '13:15:00', '15:00:00', '16:45:00', '18:30:00']})
+                         {'126 B2': ['09:45:00', '11:30:00', '13:15:00', '15:00:00', '16:45:00', '18:30:00']},
+                         msg='Zła treść response body w teście nr 1')
 
+    @freeze_time('2019-10-01')
+    def test_integration_room_2(self):
         print('\n----------WYSWIETLANIE DOSTĘPNYCH GODZIN GDY DANE SIĘ ZGADZAJĄ, DLA DWÓCH SAL----------\n')
-        data['number_of_seats'] = '5'
-        data['number_of_computers'] = '0'
-        response = self.client.post(url, data=data, format='json')
-        print(json.loads(response.content))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.data['number_of_seats'] = '5'
+        self.data['number_of_computers'] = '0'
+        response = self.client.post(self.url, data=self.data, format='json')
         self.assertEqual(json.loads(response.content),
-                         {'126 B2': ['09:45:00',
-                                     '11:30:00',
-                                     '13:15:00',
-                                     '15:00:00',
-                                     '16:45:00',
-                                     '18:30:00'],
-                          '127 B2': ['08:00:00',
-                                     '09:45:00',
-                                     '11:30:00',
-                                     '13:15:00',
-                                     '15:00:00',
-                                     '16:45:00',
-                                     '18:30:00']}
-                         )
+                         {'126 B2': ['09:45:00', '11:30:00', '13:15:00', '15:00:00', '16:45:00', '18:30:00'],
+                          '127 B2': ['08:00:00', '09:45:00', '11:30:00', '13:15:00', '15:00:00', '16:45:00',
+                                     '18:30:00']}, msg='Zła treść response body w teście integracyjnym nr 2')
+        self.assertEqual(response.status_code, status.HTTP_200_OK,
+                         msg='Zły response status code w teście integracyjnym nr 2')
 
+    @freeze_time('2019-10-01')
+    def test_integration_room_3(self):
         print('\n----------SPRAWDZANIE CZY FORMAT GODZINY JEST ODPOWIEDNI----------\n')
-        data['from_hour'] = '8;00'
-        data['to_hour'] = '18.30'
-        response = self.client.post(url, data=data, format='json')
-        print(json.loads(response.content))
-        self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+        self.data['reservation_hour_from'] = '8;00'
+        self.data['reservation_hour_to'] = '18.30'
+        response = self.client.post(self.url, data=self.data, format='json')
         self.assertEqual(json.loads(response.content),
-                         {'error': 'Zły format godziny. Prawidłowy format godziny to hh:mm'})
-        data['from_hour'] = '8:00'
-        data['to_hour'] = '18:30'
-        data['date'] = datetime.strftime(datetime.now() - timedelta(days=1), '%Y-%m-%d')
+                         {'reservation_hour_from': [
+                             'Błędny format czasu. Użyj jednego z dostępnych formatów: hh:mm[:ss[.uuuuuu]]'],
+                             'reservation_hour_to': [
+                                 'Błędny format czasu. Użyj jednego z dostępnych formatów: hh:mm[:ss[.uuuuuu]]']},
+                         msg='Zła treść response body w teście nr 3')
 
+        self.assertEqual(response.status_code, status.HTTP_406_NOT_ACCEPTABLE,
+                         msg='Zły response status code w teście integracyjnym nr 3')
+
+    @freeze_time('2019-10-10')
+    def test_integration_room_4(self):
         print('\n----------SPRAWDZANIE CZY DATA REZERWACJI JEST W PRZYSZŁOŚCI----------\n')
-        response = self.client.post(url, data=data, format='json')
-        print(json.loads(response.content))
+        self.data['reservation_hour_from'] = '8:00'
+        self.data['reservation_hour_to'] = '18:30'
+        self.data['reservation_date'] = '2019-10-01'
+        response = self.client.post(self.url, data=self.data, format='json')
         self.assertEqual(json.loads(response.content),
-                         {'error': 'Nie można zarezerwować sali w przeszłości'})
-        self.assertEqual(response.status_code, status.HTTP_406_NOT_ACCEPTABLE)
-        data['date'] = datetime.strftime(datetime.now() + timedelta(days=1), '%Y:%m:%d')
+                         {'non_field_errors': ['Nie można rezerwować sali w przeszłości']},
+                         msg='Zła treść response body w teście nr 4')
+        self.assertEqual(response.status_code, status.HTTP_406_NOT_ACCEPTABLE,
+                         msg='Zły response status code w teście integracyjnym nr 4')
 
+    @freeze_time('2019-10-01')
+    def test_integration_room_5(self):
         print('\n----------SPRAWDZANIE CZY FORMAT DATY JEST PRAWIDŁOWY----------\n')
-        response = self.client.post(url, data=data, format='json')
-        print(json.loads(response.content))
+        self.data['reservation_date'] = '2019/10/1'
+        response = self.client.post(self.url, data=self.data, format='json')
         self.assertEqual(json.loads(response.content),
-                         {'error': 'Zły format daty. Prawidłowy format daty to RRRR-MM-DD'})
-        self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
-        data['number_of_seats'] = 'dziesięć'
-        data['number_of_computers'] = 'dziesięć'
-        data['date'] = datetime.strftime(datetime.now() + timedelta(days=1), '%Y-%m-%d')
+                         {'reservation_date': ['Data ma zły format. Użyj jednego z tych formatów: YYYY-MM-DD.']},
+                         msg='Zła treść response body w teście nr 5')
+        self.assertEqual(response.status_code, status.HTTP_406_NOT_ACCEPTABLE,
+                         msg='Zły response status code w teście integracyjnym nr 5')
 
+    @freeze_time('2019-10-01')
+    def test_integration_room_6(self):
         print('\n----------SPRAWDZANIE CZY WYMAGANIA LICZBOWE SĄ PODANE POPRAWNIE----------\n')
-        response = self.client.post(url, data=data, format='json')
-        print(json.loads(response.content))
-        self.assertEqual(json.loads(response.content),
-                         {'error': 'Liczba miejsc i komputerów musi być liczbą całkowitą!'})
-        self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+        self.data['number_of_seats'] = 'dziesięć'
+        self.data['number_of_computers'] = 'dziesięć'
+        self.data['reservation_date'] = datetime.strftime(datetime.now() + timedelta(days=1), '%Y-%m-%d')
+        response = self.client.post(self.url, data=self.data, format='json')
+        self.assertEqual(json.loads(response.content), {'number_of_seats': ['Wymagana poprawna liczba całkowita.'],
+                                                        'number_of_computers': ['Wymagana poprawna liczba całkowita.']},
+                         msg='Zła treść response body w teście nr 6')
+        self.assertEqual(response.status_code, status.HTTP_406_NOT_ACCEPTABLE,
+                         msg='Zły response status code w teście integracyjnym nr 6')
+        self.data['number_of_seats'] = '10'
+        self.data['number_of_computers'] = '10'
 
+    @freeze_time('2019-10-01')
+    def test_integration_room_7(self):
         print('\n----------SPRAWDZANIE CZY REZERWACJA JEST MOŻLIWA POZA ROKIEM AKADEMICKIM----------\n')
-        data['date'] = '2020-08-08'
-        response = self.client.post(url, data=data, format='json')
-        print(json.loads(response.content))
-        self.assertEqual(response.status_code, status.HTTP_406_NOT_ACCEPTABLE)
-        self.assertEqual(json.loads(response.content),
-                         {'errors': 'Nie można rejestrować sali poza rokiem akademickim i sesją poprawkową, '
-                                    'ani na przyszłe lata!'})
+        self.data['reservation_date'] = '2020-08-08'
+        response = self.client.post(self.url, data=self.data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_406_NOT_ACCEPTABLE,
+                         msg='Zły response status code w teście integracyjnym nr 7')
+        self.assertEqual(json.loads(response.content), {'errors': 'Próbujesz zarezerwować salę na inny rok akademicki'},
+                         msg='Zła treść response body w teście nr 7')
 
+    @freeze_time('2019-10-01')
+    def test_integration_room_8(self):
         print('\n----------SPRAWDZANIE CZY REZERWACJA JEST MOŻLIWA NA INNY ROK AKADEMICKI----------\n')
-        data['date'] = '2021-10-11'
-        response = self.client.post(url, data=data, format='json')
-        print(json.loads(response.content))
-        self.assertEqual(response.status_code, status.HTTP_406_NOT_ACCEPTABLE)
-        self.assertEqual(json.loads(response.content),
-                         {'errors': 'Nie można rejestrować sali poza rokiem akademickim i sesją poprawkową, '
-                                    'ani na przyszłe lata!'})
-        print('\n----------------------------------------------------------------------\n')"""
+        self.data['reservation_date'] = '2021-10-11'
+        response = self.client.post(self.url, data=self.data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_406_NOT_ACCEPTABLE,
+                         msg='Zły response status code w teście integracyjnym nr 8')
+        self.assertEqual(json.loads(response.content), {'errors': 'Próbujesz zarezerwować salę na inny rok akademicki'},
+                         msg='Zła treść response body w teście nr 8')
+        print('\n----------------------------------------------------------------------\n')
