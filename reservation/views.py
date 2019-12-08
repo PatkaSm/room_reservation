@@ -5,7 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from mysite import variables
 from reservation_season.models import ReservationSeason
-from .models import Reservation
+from .models import Reservation, AvailabilityException
 from .serializer import ReservationSerializer
 
 
@@ -15,7 +15,6 @@ def reservation_create(request):
     serializer = ReservationSerializer(data=request.data)
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_406_NOT_ACCEPTABLE)
-        # Zakładamy, że rezerwacji można dokonywać w czasie 1 października - 31 lipca
 
     try:
         current_season = ReservationSeason.objects.get(is_current=True)
@@ -38,34 +37,24 @@ def reservation_create(request):
                         status=status.HTTP_406_NOT_ACCEPTABLE)
 
     if not is_cyclic:
-        if not room.is_available(date=reservation_date, hour=reservation_hour):
-            return Response(data={'error': 'Sala jest zarezerwowana w tym terminie!'},
+        try:
+            Reservation.create_disposable_reservation(reservation_date, reservation_hour, request.user, room)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        except AvailabilityException as e:
+            return Response(data=e.errors,
                             status=status.HTTP_406_NOT_ACCEPTABLE)
-        serializer.save(user=request.user)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
     try:
         generated_dates = current_season.generate_dates(reservation_date, is_every_two_weeks)
     except ValueError as error:
         return Response(data={'errors': str(error)},
                         status=status.HTTP_406_NOT_ACCEPTABLE)
-    reservation_list = []
-    exception_list = []
-    print(generated_dates)
-    for generated_date in generated_dates:
-        if room.is_available(generated_date, reservation_hour):
-            reservation_list.append(
-                Reservation(date=generated_date, hour=reservation_hour, user=request.user, room=room, is_cyclic=True,
-                            is_every_two_weeks=False))
-        else:
-            exception_list.append(datetime.strftime(generated_date, '%Y-%m-%d'))
-    Reservation.objects.bulk_create(reservation_list)
-    data = {'success': 'Pomyślnie zarezerwowano do końca semestru, z wyjątkiem:', 'exceptions': exception_list,
-            'ilosc': str(len(reservation_list))}
-
+    data = Reservation.create_cyclic_reservation(reservation_hour, request.user, room, generated_dates)
     return Response(data=data, status=status.HTTP_201_CREATED)
 
 
 @api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
 def reservation_delete(request, pk):
     try:
         reservation = Reservation.objects.get(pk=pk)
@@ -81,6 +70,7 @@ def reservation_delete(request, pk):
 
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def reservation_detail(request, pk):
     try:
         reservation = Reservation.objects.get(pk=pk)
