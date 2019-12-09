@@ -16,16 +16,6 @@ class Reservation(models.Model):
     def __str__(self):
         return str(self.date) + ' ' + str(self.room)
 
-    # Metoda tworząca jednorazową rezerwację
-    @staticmethod
-    def create_disposable_reservation(reservation_date, reservation_hour, user, room):
-        if not room.is_available(date=reservation_date, hour=reservation_hour):
-            raise AvailabilityException(message='Sala nie jest wtedy dostępna!',
-                                        errors={
-                                            '{} {}'.format(room.number, room.wing): 'Sala nie jest wtedy dostępna!'})
-        return Reservation.objects.create(date=reservation_date, hour=reservation_hour, user=user, room=room,
-                                          is_cyclic=False, is_every_two_weeks=False)
-
     # Metoda tworząca cykliczną rezerwację
     @staticmethod
     def create_cyclic_reservation(reservation_hour, user, room, generated_dates):
@@ -39,9 +29,7 @@ class Reservation(models.Model):
                                 is_every_two_weeks=False))
             else:
                 exception_list.append(datetime.strftime(generated_date, '%Y-%m-%d'))
-        Reservation.objects.bulk_create(reservation_list)
-        data = {'success': 'Pomyślnie zarezerwowano do końca semestru, z wyjątkiem:', 'exceptions': exception_list,
-                'ilosc': str(len(reservation_list))}
+        data = {'reservations': reservation_list, 'exceptions': exception_list}
         return data
 
 

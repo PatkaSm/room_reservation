@@ -37,19 +37,18 @@ def reservation_create(request):
                         status=status.HTTP_406_NOT_ACCEPTABLE)
 
     if not is_cyclic:
-        try:
-            Reservation.create_disposable_reservation(reservation_date, reservation_hour, request.user, room)
+        if room.is_available(date=reservation_date, hour=reservation_hour):
+            serializer.save(user=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-        except AvailabilityException as e:
-            return Response(data=e.errors,
-                            status=status.HTTP_406_NOT_ACCEPTABLE)
+        return Response(data={'errors': 'Sala nie jest wtedy dostępna'}, status=status.HTTP_406_NOT_ACCEPTABLE)
     try:
         generated_dates = current_season.generate_dates(reservation_date, is_every_two_weeks)
     except ValueError as error:
         return Response(data={'errors': str(error)},
                         status=status.HTTP_406_NOT_ACCEPTABLE)
     data = Reservation.create_cyclic_reservation(reservation_hour, request.user, room, generated_dates)
+    Reservation.objects.bulk_create(data['reservations'])
+    data['reservations'] = 'Pomyślnie zarejestrowano to końca semestru z wyjątkiem: '
     return Response(data=data, status=status.HTTP_201_CREATED)
 
 
