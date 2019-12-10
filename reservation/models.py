@@ -14,7 +14,7 @@ class Reservation(models.Model):
     is_every_two_weeks = models.BooleanField(default=False, null=True, blank=True)
 
     def __str__(self):
-        return str(self.date) + ' ' + str(self.room)
+        return str(self.date) + ' ' + str(self.room.number) + ' ' + str(self.room.wing)
 
     # Metoda tworząca cykliczną rezerwację
     @staticmethod
