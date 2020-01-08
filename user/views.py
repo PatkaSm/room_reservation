@@ -1,12 +1,9 @@
-from rest_framework import viewsets, status
+from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-
-from .models import User
 from .serializers import UserSerializer
-from django.core import serializers
-import json
+
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -33,3 +30,12 @@ def user_details(request):
         'consultations': request.user.consultations
     }
     return Response(data=data, status=status.HTTP_200_OK)
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_profile(request):
+    serializer = UserSerializer(request.user, data=request.data, partial=True)
+    if not serializer.is_valid():
+        return Response(data=serializer.errors, status=status.HTTP_406_NOT_ACCEPTABLE)
+    serializer.update(instance=request.user, validated_data=serializer.validated_data)
+    return Response(data=serializer.data, status=status.HTTP_200_OK)

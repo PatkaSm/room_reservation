@@ -18,7 +18,7 @@ from django.contrib import admin
 from django.urls import path, include
 from rest_framework.authtoken import views
 
-from user.views import user_register, user_details
+from user.views import user_register, user_details, update_profile
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -27,4 +27,5 @@ urlpatterns = [
     url(r'^login/', views.obtain_auth_token),
     path('users/register/', user_register, name='register'),
     path('user/details/', user_details, name='details'),
+    path('user/update_profile/', update_profile, name='update_profile'),
 ]
