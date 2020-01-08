@@ -18,12 +18,13 @@ from django.contrib import admin
 from django.urls import path, include
 from rest_framework.authtoken import views
 
-from user.views import user_register
+from user.views import user_register, user_details
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('rooms/', include('room.urls')),
     path('reservations/', include('reservation.urls')),
     url(r'^login/', views.obtain_auth_token),
-    path('users/register', user_register, name='register'),
+    path('users/register/', user_register, name='register'),
+    path('user/details/', user_details, name='details'),
 ]

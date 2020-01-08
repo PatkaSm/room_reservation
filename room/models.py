@@ -2,7 +2,7 @@ from datetime import time
 
 from django.db import models
 
-Equipment = [('BRAK', 'Brak'), ('STEROWNIKI', 'Sterowniki'), ('PRACOWNIA_FIZYCZNA', 'Pracownia fizyczna')]
+Equipment = [('Brak', 'Brak'), ('Sterowniki', 'Sterowniki'), ('Pracownia fizyczna', 'Pracownia fizyczna')]
 
 
 class Room(models.Model):

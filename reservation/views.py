@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta, date, time
 from rest_framework import viewsets, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -7,6 +7,8 @@ from mysite import variables
 from reservation_season.models import ReservationSeason
 from .models import Reservation, AvailabilityException
 from .serializer import ReservationSerializer
+from django.http import JsonResponse
+
 
 
 @api_view(['POST'])
@@ -77,3 +79,19 @@ def reservation_detail(request, pk):
         return Response(status=status.HTTP_404_NOT_FOUND)
     serializer = ReservationSerializer(reservation)
     return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def my_reservations(request):
+    try:
+        reservations = Reservation.objects.filter(user=request.user)
+    except Reservation.DoesnotExist:
+        return Response(data={}, status=status.HTTP_406_NOT_ACCEPTABLE)
+    data = []
+    for reservation in reservations:
+        data.append({
+            'room_number': reservation.room.number,
+            'date': datetime.strftime(reservation.date, '%Y-%m-%d'),
+            'hour': time.strftime(reservation.hour, '%H:%M')
+        })
+    return JsonResponse(data=data, status=status.HTTP_200_OK, safe=False)

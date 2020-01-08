@@ -58,6 +58,10 @@ class User(AbstractBaseUser):
     active = models.BooleanField(default=False)
     staff = models.BooleanField(default=False)
     admin = models.BooleanField(default=False)
+    phone_number = models.IntegerField(null=True)
+    room_number = models.TextField(null=True)
+    consultations = models.TextField(null=True)
+
     USERNAME_FIELD = 'email'  # assigning an email as a username
     REQUIRED_FIELDS = ['first_name', 'last_name']  # set as necessary for filling
 
