@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'reservation',
     'room',
     'reservation_season',
+    'log',
     'coverage'
 ]
 

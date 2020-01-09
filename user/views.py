@@ -2,6 +2,8 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+
+from log.models import Log
 from .serializers import UserSerializer
 
 
@@ -13,10 +15,12 @@ def user_register(request):
     if serializer.is_valid():
         serializer.save()
         data['success'] = 'Zarejestrowano pomyslnie'
+        Log.objects.create(user=request.user, action='Rejestracja użytkownika')
         return Response(data, status=status.HTTP_201_CREATED)
     else:
         data['fail'] = "Błąd rejestracji"
         return Response(data, status=status.HTTP_406_NOT_ACCEPTABLE)
+
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -31,6 +35,7 @@ def user_details(request):
     }
     return Response(data=data, status=status.HTTP_200_OK)
 
+
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
 def update_profile(request):
@@ -38,4 +43,6 @@ def update_profile(request):
     if not serializer.is_valid():
         return Response(data=serializer.errors, status=status.HTTP_406_NOT_ACCEPTABLE)
     serializer.update(instance=request.user, validated_data=serializer.validated_data)
+    Log.objects.create(user=request.user, action='Edycja danych użytkownika')
+    print(Log.objects.all().values())
     return Response(data=serializer.data, status=status.HTTP_200_OK)

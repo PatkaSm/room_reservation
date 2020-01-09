@@ -35,7 +35,7 @@ class Room(models.Model):
         #                                               godzina2,
         #                                               godzina3...]}
         rooms_that_fulfill = []  # lista na sale, które spełniają wymagania użytkownika
-        final_dict = {}
+        final_list = []
 
         for room in room_list:
             if (room.number_of_computers >= number_of_computers and room.number_of_seats >= number_of_seats
@@ -48,8 +48,13 @@ class Room(models.Model):
                 if (reserv.hour in room_hours) and reserv.room == room and reserv.date == reservation_date:
                     room_hours.remove(reserv.hour)
             if not len(room_hours) == 0:
-                final_dict[str(room.number) + ' ' + str(room.wing)] = room_hours
-        return final_dict
+                final_list.append({
+                    'room': str(room.number) + ' ' + str(room.wing),
+                    'room_id': room.id,
+                    'hours': room_hours,
+                    'number_of_seats': room.number_of_seats
+                    })
+        return final_list
 
 
 import reservation.models

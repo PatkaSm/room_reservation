@@ -29,7 +29,7 @@ class Reservation(models.Model):
                                 is_every_two_weeks=False))
             else:
                 exception_list.append(datetime.strftime(generated_date, '%Y-%m-%d'))
-        data = {'reservations': reservation_list, 'exceptions': exception_list}
+        data = {'reservations': reservation_list, 'exceptions': exception_list, 'room': str(room)}
         return data
 
 

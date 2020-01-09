@@ -1,8 +1,12 @@
 from datetime import datetime, timedelta, date, time
+
+from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+
+from log.models import Log
 from mysite import variables
 from reservation_season.models import ReservationSeason
 from .models import Reservation, AvailabilityException
@@ -10,11 +14,11 @@ from .serializer import ReservationSerializer
 from django.http import JsonResponse
 
 
-
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def reservation_create(request):
     serializer = ReservationSerializer(data=request.data)
+    print(request.data)
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_406_NOT_ACCEPTABLE)
 
@@ -41,6 +45,10 @@ def reservation_create(request):
     if not is_cyclic:
         if room.is_available(date=reservation_date, hour=reservation_hour):
             serializer.save(user=request.user)
+            Log.objects.create(user=request.user,
+                               action='Użytkownik {} o id: {}, zarezerwował salę {} {} na dzień {} i godzinę {}'.format(
+                                   request.user.email, request.user.id, room.number, room.wing, reservation_date,
+                                   reservation_hour))
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(data={'errors': 'Sala nie jest wtedy dostępna'}, status=status.HTTP_406_NOT_ACCEPTABLE)
     try:
@@ -50,6 +58,14 @@ def reservation_create(request):
                         status=status.HTTP_406_NOT_ACCEPTABLE)
     data = Reservation.create_cyclic_reservation(reservation_hour, request.user, room, generated_dates)
     Reservation.objects.bulk_create(data['reservations'])
+    Log.objects.create(user=request.user,
+                       action='Użytkownik {} o id: {}, zarezerwował salę {} cyklicznie, od dnia {} do dnia {} o godzinie {} z wyjątkami: {}'.format(
+                           request.user.email, request.user.id,
+                           data['room'],
+                           datetime.strftime(data['reservations'][0].date, '%Y-%m-%d'),
+                           datetime.strftime(data['reservations'][-1].date, '%Y-%m-%d'),
+                           data['reservations'][0].hour,
+                           data['exceptions']))
     data['reservations'] = 'Pomyślnie zarejestrowano to końca semestru z wyjątkiem: '
     return Response(data=data, status=status.HTTP_201_CREATED)
 
@@ -57,16 +73,15 @@ def reservation_create(request):
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
 def reservation_delete(request, pk):
-    try:
-        reservation = Reservation.objects.get(pk=pk)
-    except Reservation.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
+    reservation = get_object_or_404(Reservation, id=pk, user=request.user)
     operation = reservation.delete()
     data = {}
-    if operation:
-        data["success"] = "Delete successfully"
-    else:
-        data["failure"] = "Delete failed"
+    data["success"] = "Delete successfully"
+    Log.objects.create(user=request.user,
+                       action='Użytkownik {} o id: {}, zarezerwował salę {} {} na dzień {} i godzinę {}'.format(
+                           request.user.email, request.user.id, reservation.room.number, reservation.room.wing,
+                           reservation.date,
+                           reservation.hour))
     return Response(data=data, status=status.HTTP_200_OK)
 
 
@@ -79,6 +94,7 @@ def reservation_detail(request, pk):
         return Response(status=status.HTTP_404_NOT_FOUND)
     serializer = ReservationSerializer(reservation)
     return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

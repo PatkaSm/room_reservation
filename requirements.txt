@@ -2,5 +2,6 @@ freezegun
 python-dateutil
 Django==2.2.8
 djangorestframework==3.10.3
+xhtml12pdf==0.2.3
 django-cors-headers==3.2.0
 
