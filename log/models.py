@@ -6,3 +6,4 @@ class Log(models.Model):
     date = models.DateField(auto_now_add=True)
     user = models.ForeignKey(User, on_delete=models.DO_NOTHING)
     action = models.TextField()
+

@@ -74,11 +74,10 @@ def reservation_create(request):
 @permission_classes([IsAuthenticated])
 def reservation_delete(request, pk):
     reservation = get_object_or_404(Reservation, id=pk, user=request.user)
-    operation = reservation.delete()
-    data = {}
-    data["success"] = "Delete successfully"
+    reservation.delete()
+    data = {"success": "Delete successfully"}
     Log.objects.create(user=request.user,
-                       action='Użytkownik {} o id: {}, zarezerwował salę {} {} na dzień {} i godzinę {}'.format(
+                       action='Użytkownik {} o id: {}, usunął rezerwacje sali {} {} na dzień {} i godzinę {}'.format(
                            request.user.email, request.user.id, reservation.room.number, reservation.room.wing,
                            reservation.date,
                            reservation.hour))
@@ -101,7 +100,7 @@ def reservation_detail(request, pk):
 def my_reservations(request):
     try:
         reservations = Reservation.objects.filter(user=request.user)
-    except Reservation.DoesnotExist:
+    except Reservation.DoesNotExist:
         return Response(data={}, status=status.HTTP_406_NOT_ACCEPTABLE)
     data = []
     for reservation in reservations:

@@ -1,0 +1,67 @@
+{% load static %}
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//PL" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>Title</title>
+    <meta charset="utf-8">
+    <style type="text/css">
+        @font-face {
+            font-family: Arial-Unicode, "Arial-Unicode";
+            src: url({% static '/arial-unicode.ttf' %});
+        }
+
+
+        body {
+            font-size: 14px;
+            font-family: Arial-Unicode, sans-serif;
+
+        }
+
+        .header {
+            font-size: 20px;
+            font-weight: 100;
+            text-align: center;
+            color: #007cae;
+        }
+
+        .title {
+            font-size: 22px;
+            font-weight: 100;
+            padding: 10px 20px 0px 20px;
+        }
+
+        .title span {
+            color: #007cae;
+        }
+
+        .details {
+            padding: 10px 20px 0px 20px;
+            text-align: left !important;
+        }
+
+        .hrItem {
+            border: none;
+            height: 1px;
+            color: #333;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+<div class='wrapper'>
+    <div class='header'>
+        <p class='title'>Logi z dnia {{ date }}</p>
+    </div>
+    <div>
+        <div class='details'>
+            {% for log in logs %}
+                Date: {{ log.date }}<br/>
+                User: {{ log.user }}<br/>
+                Action: {{ log.action }}<br/>
+                <hr class='hrItem'/>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+</body>
+</html>

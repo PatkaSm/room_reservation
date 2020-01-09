@@ -44,7 +44,8 @@ INSTALLED_APPS = [
     'room',
     'reservation_season',
     'log',
-    'coverage'
+    'coverage',
+    'easy_pdf',
 ]
 
 AUTH_USER_MODEL = 'user.User'  # changes the buil-in user model to ours
@@ -73,7 +74,7 @@ ROOT_URLCONF = 'mysite.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -133,7 +134,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
 STATIC_URL = '/static/'
-
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
