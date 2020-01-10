@@ -18,7 +18,6 @@ from django.http import JsonResponse
 @permission_classes([IsAuthenticated])
 def reservation_create(request):
     serializer = ReservationSerializer(data=request.data)
-    print(request.data)
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_406_NOT_ACCEPTABLE)
 
@@ -73,7 +72,10 @@ def reservation_create(request):
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
 def reservation_delete(request, pk):
-    reservation = get_object_or_404(Reservation, id=pk, user=request.user)
+    if not request.user.is_admin:
+        reservation = get_object_or_404(Reservation, id=pk, user=request.user)
+    else:
+        reservation = get_object_or_404(Reservation, id=pk)
     reservation.delete()
     data = {"success": "Delete successfully"}
     Log.objects.create(user=request.user,
@@ -105,6 +107,25 @@ def my_reservations(request):
     data = []
     for reservation in reservations:
         data.append({
+            'id': reservation.id,
+            'room_number': reservation.room.number,
+            'room_wing': reservation.room.wing,
+            'date': datetime.strftime(reservation.date, '%Y-%m-%d'),
+            'hour': time.strftime(reservation.hour, '%H:%M')
+        })
+    return JsonResponse(data=data, status=status.HTTP_200_OK, safe=False)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def all_reservations(request):
+    if not request.user.is_admin:
+        return Response(status=status.HTTP_403_FORBIDDEN)
+    reservations = Reservation.objects.all()
+    data = []
+    for reservation in reservations:
+        data.append({
+            'user_email': reservation.user.email,
             'id': reservation.id,
             'room_number': reservation.room.number,
             'room_wing': reservation.room.wing,
