@@ -105,7 +105,9 @@ def my_reservations(request):
     data = []
     for reservation in reservations:
         data.append({
+            'id': reservation.id,
             'room_number': reservation.room.number,
+            'room_wing': reservation.room.wing,
             'date': datetime.strftime(reservation.date, '%Y-%m-%d'),
             'hour': time.strftime(reservation.hour, '%H:%M')
         })
