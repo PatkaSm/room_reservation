@@ -7,7 +7,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from log.models import Log
-from mysite import variables
 from reservation_season.models import ReservationSeason
 from .models import Reservation, AvailabilityException
 from .serializer import ReservationSerializer
@@ -90,11 +89,16 @@ def reservation_delete(request, pk):
 @permission_classes([IsAuthenticated])
 def reservation_detail(request, pk):
     try:
-        reservation = Reservation.objects.get(pk=pk)
+        reservation = Reservation.objects.get(id=pk)
+        serializer = ReservationSerializer(reservation)
     except Reservation.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
-    serializer = ReservationSerializer(reservation)
-    return Response(serializer.data, status=status.HTTP_200_OK)
+    if request.user.is_admin:
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    elif request.user == reservation.user:
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response(status=status.HTTP_403_FORBIDDEN)
+
 
 
 @api_view(['GET'])
