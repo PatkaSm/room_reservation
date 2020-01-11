@@ -1,4 +1,6 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import status
+from rest_framework.authtoken.models import Token
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -72,3 +74,33 @@ def get_users(request):
             'is_admin': user.is_admin
         })
     return Response(data=response_data, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def delete_user(request, **kwargs):
+    if not request.user.is_admin:
+        return Response(status=status.HTTP_406_NOT_ACCEPTABLE)
+    user = get_object_or_404(User, id=kwargs.get('pk'))
+    Log.objects.create(user=request.user,
+                       action='Konto użytkownika  {} o id {} zostało ustawione na nieaktywne'.format(user.email,
+                                                                                                     user.id))
+    Token.objects.filter(user=user).delete()
+    user.delete()
+    return Response(status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def set_admin(request, **kwargs):
+    if not request.user.is_admin:
+        return Response(status=status.HTTP_406_NOT_ACCEPTABLE)
+    user = get_object_or_404(User, id=request.data['id'])
+    Log.objects.create(user=request.user,
+                       action='Użytkownikowi  {} o id {} nadano uprawnienia administratora'.format(user.email, user.id))
+    if user.is_admin:
+        user.admin = False
+    else:
+        user.admin = True
+    user.save()
+    return Response(status=status.HTTP_200_OK)

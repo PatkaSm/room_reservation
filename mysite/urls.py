@@ -17,9 +17,9 @@ from django.conf.urls import url
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework.authtoken import views
-from user.views import user_register, user_details, update_profile, is_admin, get_users
+from user.views import user_register, user_details, update_profile, is_admin, get_users, delete_user, set_admin
 from log.views import LogsPDFView
-from reservation_season.views import get_season
+from reservation_season.views import get_season, new_season
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -33,4 +33,7 @@ urlpatterns = [
     path('users/is_admin/', is_admin, name='is_admin'),
     path('users/get_users/', get_users, name='get_users'),
     path('seasons/get_season/', get_season, name='get_season'),
+    path('season/new/', new_season, name='new_season'),
+    path('users/<pk>/delete/', delete_user, name='delete_user'),
+    path('users/set_admin/', set_admin, name='set_admin'),
 ]
