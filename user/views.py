@@ -66,13 +66,14 @@ def get_users(request):
     users = User.objects.all()
     response_data = []
     for user in users:
-        response_data.append({
-            'id': user.id,
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-            'email': user.email,
-            'is_admin': user.is_admin
-        })
+        if user != request.user:
+            response_data.append({
+                'id': user.id,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'email': user.email,
+                'is_admin': user.is_admin
+            })
     return Response(data=response_data, status=status.HTTP_200_OK)
 
 
