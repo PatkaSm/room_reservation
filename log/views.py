@@ -1,6 +1,8 @@
 from datetime import datetime
 
+from django.shortcuts import get_object_or_404
 from rest_framework import status
+from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
 
 from log.models import Log
@@ -12,11 +14,10 @@ class LogsPDFView(PDFTemplateView):
     pdf_filename = "Raport.pdf"
 
     def get(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            raise ConnectionAbortedError('Nie jesteś zautoryzowany')
-        if not request.user.is_admin:
-            raise ConnectionAbortedError('Nie jesteś zautoryzowany')
-
+        tokenValue = self.request.GET.get('auth', 'none')
+        token = get_object_or_404(Token, key=tokenValue)
+        if not token.user.is_admin:
+            raise ConnectionAbortedError("Nie jesteś zautoryzowany")
         context = self.get_context_data(**kwargs)
         return self.render_to_response(context)
 
