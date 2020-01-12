@@ -11,7 +11,7 @@ from mysite import settings
 
 
 class UserManager(BaseUserManager):
-    def create_user(self, email, first_name, last_name, password=None, is_staff=False, is_active=True,
+    def create_user(self, email, first_name, last_name, password=None, is_staff=False, is_active=False,
                     is_admin=False):  # creting our user
         if not email:
             raise ValueError("Users must have an email adress")

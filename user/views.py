@@ -72,7 +72,8 @@ def get_users(request):
                 'first_name': user.first_name,
                 'last_name': user.last_name,
                 'email': user.email,
-                'is_admin': user.is_admin
+                'is_admin': user.is_admin,
+                'is_active': user.is_active
             })
     return Response(data=response_data, status=status.HTTP_200_OK)
 
@@ -98,10 +99,26 @@ def set_admin(request, **kwargs):
         return Response(status=status.HTTP_406_NOT_ACCEPTABLE)
     user = get_object_or_404(User, id=request.data['id'])
     Log.objects.create(user=request.user,
-                       action='Użytkownikowi  {} o id {} nadano uprawnienia administratora'.format(user.email, user.id))
+                       action='Użytkownikowi  {} o id {} zmieniono uprawnienia administratora'.format(user.email, user.id))
     if user.is_admin:
         user.admin = False
     else:
         user.admin = True
+    user.save()
+    return Response(status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def set_active(request, **kwargs):
+    if not request.user.is_admin:
+        return Response(status=status.HTTP_403_FORBIDDEN)
+    user = get_object_or_404(User, id=request.data['id'])
+    Log.objects.create(user=request.user,
+                       action='Użytkownikowi  {} o id {} zmieniono status aktywności'.format(user.email, user.id))
+    if user.is_active:
+        user.active = False
+    else:
+        user.active = True
     user.save()
     return Response(status=status.HTTP_200_OK)
