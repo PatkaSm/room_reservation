@@ -105,7 +105,7 @@ def reservation_detail(request, pk):
 @permission_classes([IsAuthenticated])
 def my_reservations(request):
     try:
-        reservations = Reservation.objects.filter(user=request.user)
+        reservations = Reservation.objects.filter(user=request.user, date__gt=date.today())
     except Reservation.DoesNotExist:
         return Response(data={}, status=status.HTTP_406_NOT_ACCEPTABLE)
     data = []
@@ -125,7 +125,7 @@ def my_reservations(request):
 def all_reservations(request):
     if not request.user.is_admin:
         return Response(status=status.HTTP_403_FORBIDDEN)
-    reservations = Reservation.objects.all()
+    reservations = Reservation.objects.filter(date__gt=date.today())
     data = []
     for reservation in reservations:
         data.append({

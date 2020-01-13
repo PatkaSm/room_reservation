@@ -17,7 +17,7 @@ def show_available_rooms(request):
     try:
         current_season = ReservationSeason.objects.get(is_current=True)
     except ReservationSeason.DoesNotExist:
-        data = {'error': 'Sezon rezerwacji nie został ustanowiony przez administratora'}
+        data = {'non_field_errors': ['Sezon rezerwacji nie został ustanowiony przez administratora']}
         return Response(data=data, status=status.HTTP_406_NOT_ACCEPTABLE)
 
     serializer = DemandingSerializer(data=request.data)
@@ -32,11 +32,11 @@ def show_available_rooms(request):
     additional_equipment = serializer.validated_data.get('additional_equipment')
 
     if date.today() < current_season.season_start or date.today() > current_season.season_end:
-        return Response(data={'data': "Nie możesz rezerwować sali podczas trwania wakacji"},
+        return Response(data={'non_field_errors': ["Nie możesz rezerwować sali podczas trwania wakacji"]},
                         status=status.HTTP_406_NOT_ACCEPTABLE)
 
     if reservation_date > current_season.season_end or reservation_date < current_season.season_start:
-        return Response(data={'errors': "Próbujesz zarezerwować salę na inny rok akademicki"},
+        return Response(data={'non_field_errors': ["Próbujesz zarezerwować salę na inny rok akademicki"]},
                         status=status.HTTP_406_NOT_ACCEPTABLE)
     room_list = Room.objects.all()
     reservation_list = Reservation.objects.all()
