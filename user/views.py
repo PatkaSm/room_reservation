@@ -1,6 +1,7 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.authtoken.models import Token
+from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -8,6 +9,25 @@ from rest_framework.response import Response
 from log.models import Log
 from .models import User
 from .serializers import UserSerializer
+
+
+class AuthToken(ObtainAuthToken):
+    def post(self, request, *args, **kwargs):
+
+        serializer = self.serializer_class(data=request.data,
+                                           context={'request': request})
+        try:
+            user_to_confirm = User.objects.get(email=request.data['username'])
+            if not user_to_confirm.is_active:
+                return Response(status=status.HTTP_406_NOT_ACCEPTABLE)
+        except User.DoesNotExist:
+            pass
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
+        token, created = Token.objects.get_or_create(user=user)
+        return Response({
+            'token': token.key,
+        })
 
 
 @api_view(['POST'])
@@ -99,7 +119,8 @@ def set_admin(request, **kwargs):
         return Response(status=status.HTTP_406_NOT_ACCEPTABLE)
     user = get_object_or_404(User, id=request.data['id'])
     Log.objects.create(user=request.user,
-                       action='Użytkownikowi  {} o id {} zmieniono uprawnienia administratora'.format(user.email, user.id))
+                       action='Użytkownikowi  {} o id {} zmieniono uprawnienia administratora'.format(user.email,
+                                                                                                      user.id))
     if user.is_admin:
         user.admin = False
     else:

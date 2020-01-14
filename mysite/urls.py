@@ -18,7 +18,7 @@ from django.contrib import admin
 from django.urls import path, include
 from rest_framework.authtoken import views
 from user.views import user_register, user_details, update_profile, is_admin, get_users, delete_user, set_admin, \
-    set_active
+    set_active, AuthToken
 from log.views import LogsPDFView
 from reservation_season.views import get_season, new_season
 
@@ -26,7 +26,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('rooms/', include('room.urls')),
     path('reservations/', include('reservation.urls')),
-    url(r'^login/', views.obtain_auth_token),
+    url(r'^login/', AuthToken.as_view()),
     path('users/register/', user_register, name='register'),
     path('user/details/', user_details, name='details'),
     path('user/update_profile/', update_profile, name='update_profile'),
